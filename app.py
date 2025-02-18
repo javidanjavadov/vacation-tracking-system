@@ -105,7 +105,7 @@ class VacationRequest:
 app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = app.config['SECRET_KEY']
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://superuser:Qwerty@34@localhost/smart_water_manage')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://superuser:Qwerty%4034@localhost/smart_water_manage')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Extensions Setup
@@ -115,6 +115,9 @@ oauth = OAuth(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
+with app.app_context():
+    db.create_all()
 
 # OAuth Configuration
 google = oauth.register(
