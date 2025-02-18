@@ -3,3 +3,4 @@ authlib
 flask-sqlalchemy
 pyjwt
 bcrypt
+pytest
