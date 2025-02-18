@@ -30,7 +30,7 @@ leave_reasons = {
 app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = app.config['SECRET_KEY']
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://superuser:Qwerty%4034@localhost/smart_water_manage')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://koyeb-adm:npg_FDVogR7IxC2S@ep-damp-mouse-a2n24t1x.eu-central-1.pg.koyeb.app:5432/vacationtracksystem')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 
