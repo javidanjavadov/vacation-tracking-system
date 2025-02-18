@@ -26,15 +26,39 @@ leave_reasons = {
     'study_leave': 5
 }
 
-class User:
-    def __init__(self, id, email, password, name, roles=None, is_admin=False, remaining_vacation_days=None):
-        self.id = id
-        self.email = email
-        self.password = password
-        self.name = name
-        self.roles = roles or ['Employee']
-        self.is_admin = is_admin
-        self.remaining_vacation_days = remaining_vacation_days if remaining_vacation_days is not None else 21  # Default to 21
+# Flask Application Setup
+app = Flask(__name__)
+app.config.from_object(Config)
+app.secret_key = app.config['SECRET_KEY']
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://superuser:Qwerty%4034@localhost/smart_water_manage')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+
+# Extensions Setup
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+oauth = OAuth(app)
+bcrypt = Bcrypt(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
+
+
+with app.app_context():
+    db.create_all()
+
+class User(db.Model):
+    __tablename__ = 'users'  # Cədvəl adı
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    roles = db.Column(db.String(100), default='Employee')  # 'Employee' kimi default dəyər təyin edilir
+    is_admin = db.Column(db.Boolean, default=False)
+    remaining_vacation_days = db.Column(db.Integer, default=21)
+
+    # Relationship to VacationRequest
+    vacation_requests = db.relationship('VacationRequest', backref='user', lazy=True)
 
     def __repr__(self):
         return f"<User {self.name} ({self.email})>"
@@ -59,7 +83,7 @@ class User:
 
     def get_vacation_requests(self):
         # Fetch vacation requests associated with this user
-        return get_vacation_requests_by_user_id(self.id)
+        return VacationRequest.query.filter_by(user_id=self.id).all()
 
     def update_vacation_days(self):
         # Get all approved vacation requests
@@ -74,16 +98,15 @@ class User:
         self.remaining_vacation_days -= total_days_off
         return self.remaining_vacation_days
 
-
-
-class VacationRequest:
-    def __init__(self, user_id, start_date, end_date, reason, leave_reason=None, status="Pending"):
-        self.user_id = user_id
-        self.start_date = start_date
-        self.end_date = end_date
-        self.reason = reason
-        self.leave_reason = leave_reason  # Optional, but you can choose to set it
-        self.status = status
+class VacationRequest(db.Model):
+    __tablename__ = 'vacation_requests'  # Cədvəl adı
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # Foreign key to User
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    reason = db.Column(db.String(200), nullable=False)
+    leave_reason = db.Column(db.String(100), nullable=True)  # Optional
+    status = db.Column(db.String(20), default="Pending")
 
     def __repr__(self):
         return f"<VacationRequest {self.user_id} {self.start_date} to {self.end_date}>"
@@ -101,23 +124,6 @@ class VacationRequest:
         
         return days_off
 
-# Flask Application Setup
-app = Flask(__name__)
-app.config.from_object(Config)
-app.secret_key = app.config['SECRET_KEY']
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://superuser:Qwerty%4034@localhost/smart_water_manage')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Extensions Setup
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-oauth = OAuth(app)
-bcrypt = Bcrypt(app)
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
-
-with app.app_context():
-    db.create_all()
 
 # OAuth Configuration
 google = oauth.register(
