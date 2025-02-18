@@ -159,7 +159,7 @@ def update_remaining_vacation_days(user_id, new_remaining_days):
 
     try:
         # Ensure the table name is properly quoted to avoid syntax errors
-        cursor.execute('UPDATE User SET remaining_vacation_days = %s WHERE id = %s', (new_remaining_days, user_id))
+        cursor.execute('UPDATE "user" SET remaining_vacation_days = %s WHERE id = %s', (new_remaining_days, user_id))
         db.commit()
         return True
     except Exception as e:
@@ -176,8 +176,8 @@ def get_user_remaining_vacation_days(user_id):
     cursor = db.cursor()
     
     try:
-        # Ensure the table name is properly quoted in case it's a reserved word (like User)
-        cursor.execute('SELECT remaining_vacation_days FROM User WHERE id = %s', (user_id,))
+        # Ensure the table name is properly quoted in case it's a reserved word (like "user")
+        cursor.execute('SELECT remaining_vacation_days FROM "user" WHERE id = %s', (user_id,))
         result = cursor.fetchone()
         
         if result:
@@ -308,7 +308,7 @@ def execute_query(query, params=(), fetchall=False, commit=False):
 
 def get_user_by_email(email):
     query = """SELECT id, email, password, name, roles, is_admin, remaining_vacation_days 
-               FROM User WHERE email = %s"""
+               FROM "user" WHERE email = %s"""
     result = execute_query(query, (email,))
     if result:
         user_id, email, password, name, roles, is_admin, remaining_days = result
@@ -322,7 +322,7 @@ def get_user_by_email(email):
 
 def get_user_by_id(user_id):
     query = """SELECT id, email, password, name, roles, is_admin, remaining_vacation_days 
-               FROM User WHERE id = %s"""
+               FROM "user" WHERE id = %s"""
     result = execute_query(query, (user_id,))
     if result:
         user_id, email, password, name, roles, is_admin, remaining_days = result
@@ -337,7 +337,7 @@ def get_user_by_id(user_id):
 
 def create_user(email, name, password, roles=['Operator'], is_admin=False):
     hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
-    query = """INSERT INTO User (email, name, password, roles, is_admin)
+    query = """INSERT INTO "user" (email, name, password, roles, is_admin)
                VALUES (%s, %s, %s, %s, %s) RETURNING id"""
     user_id = execute_query(
         query,
@@ -368,7 +368,7 @@ def get_all_vacation_requests():
     return [dict(zip(['id', 'user_id', 'start_date', 'end_date', 'leave_reason', 'status'], row)) for row in results]
 
 def get_remaining_vacation_days(user_id):
-    query = """SELECT remaining_vacation_days FROM User WHERE id = %s"""
+    query = """SELECT remaining_vacation_days FROM "user" WHERE id = %s"""
     result = execute_query(query, (user_id,))
     
     # If the result is a single value (int), return it directly
@@ -461,7 +461,7 @@ def update_user_vacation_days(user_id, delta):
     cursor = db.cursor()
     try:
         # Fetch current remaining vacation days for the user
-        cursor.execute('SELECT remaining_vacation_days FROM User WHERE id = %s', (user_id,))
+        cursor.execute('SELECT remaining_vacation_days FROM "user" WHERE id = %s', (user_id,))
         current_vacation_days = cursor.fetchone()[0]
         print(f"Current remaining vacation days: {current_vacation_days}")
         
@@ -471,7 +471,7 @@ def update_user_vacation_days(user_id, delta):
         
         # Update the user's remaining vacation days in the database
         cursor.execute(
-            'UPDATE User SET remaining_vacation_days = %s WHERE id = %s', 
+            'UPDATE "user" SET remaining_vacation_days = %s WHERE id = %s', 
             (new_vacation_days, user_id)
         )
         db.commit()
@@ -486,7 +486,7 @@ def update_user_vacation_days(user_id, delta):
 
 
 def get_all_users():
-    query = """SELECT id, email, name, roles, is_admin FROM User """
+    query = """SELECT id, email, name, roles, is_admin FROM "user" """
     results = execute_query(query, fetchall=True)
     if results:
         return [User(row[0], row[1], None, row[2], row[3], row[4]) for row in results]
@@ -525,7 +525,7 @@ def forgot_password():
                 flash("Password cannot be empty.", 'danger')
                 return render_template('forgot_password.html')
             hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
-            query = """UPDATE User SET password = %s WHERE email = %s"""
+            query = """UPDATE "user" SET password = %s WHERE email = %s"""
             execute_query(query, (hashed_password, email), commit=True)
             flash("Password updated successfully.", 'success')
             return redirect(url_for('login'))
@@ -545,7 +545,7 @@ def update_user_role():
     new_role = request.form.get('new_role')
     
     # Update roles in database
-    query = """UPDATE User SET roles = ARRAY[%s]::VARCHAR[] WHERE id = %s"""
+    query = """UPDATE "user" SET roles = ARRAY[%s]::VARCHAR[] WHERE id = %s"""
     execute_query(query, (new_role, user_id), commit=True)
     
     flash("User role updated successfully", 'success')
@@ -561,7 +561,7 @@ def delete_user():
     user_id = request.form.get('user_id')
     
     # Delete user from database
-    execute_query("""DELETE FROM User WHERE id = %s""", (user_id,), commit=True)
+    execute_query("""DELETE FROM "user" WHERE id = %s""", (user_id,), commit=True)
     
     flash("User deleted successfully", 'success')
     return redirect(url_for('admin_dashboard'))
@@ -573,7 +573,7 @@ def reset_password(token):
         user = get_user_by_email(token)  # Simplified token handling
         if user:
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-            execute_query("""UPDATE User SET password = %s WHERE email = %s""", (hashed_password, user.email), commit=True)
+            execute_query("""UPDATE "user" SET password = %s WHERE email = %s""", (hashed_password, user.email), commit=True)
             flash('Your password has been reset successfully!', 'success')
             return redirect(url_for('login'))
         flash('Invalid or expired token.', 'danger')
@@ -844,7 +844,7 @@ def admin_dashboard():
             vr.status,
             (vr.end_date - vr.start_date) + 1 AS total_days
         FROM vacation_requests vr
-        INNER JOIN User u ON vr.user_id = u.id  -- Use quotes for reserved keywords
+        INNER JOIN "user" u ON vr.user_id = u.id  -- Use quotes for reserved keywords
         ORDER BY vr.start_date DESC;
         """
         results = execute_query(query, fetchall=True)
