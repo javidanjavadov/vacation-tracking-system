@@ -250,6 +250,10 @@ def format_date_filter(date):
 
 def get_db_connection():
     try:
+        if app.config["DATABASE_URL"]:
+            db_url = app.config["DATABASE_URL"]
+            return psycopg2.connect(db_url)
+
         return psycopg2.connect(
             dbname=app.config['DATABASE_NAME'],
             user=app.config['DATABASE_USER'],
