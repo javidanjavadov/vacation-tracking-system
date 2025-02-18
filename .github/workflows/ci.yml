@@ -56,5 +56,5 @@ jobs:
             echo "Waiting for PostgreSQL..."
             sleep 3
           done
-          # Testleri çalıştır
-          pytest
+          # Test dosyalarını çalıştır
+          pytest tests/  # Testlerin bulunduğu klasör
