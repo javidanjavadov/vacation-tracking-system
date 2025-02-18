@@ -43,11 +43,12 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 
+
 with app.app_context():
     db.create_all()
 
 class User(db.Model):
-    __tablename__ = 'user'  # Cədvəl adı
+    __tablename__ = 'users'  # Cədvəl adı
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
