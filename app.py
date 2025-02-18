@@ -9,6 +9,7 @@ from authlib.integrations.flask_client import OAuth
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from flask_bcrypt import Bcrypt
 from flask import Flask
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 import jwt
 from datetime import datetime, timedelta
@@ -104,8 +105,12 @@ class VacationRequest:
 app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = app.config['SECRET_KEY']
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://superuser:Qwerty@34@localhost/smart_water_manage')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Extensions Setup
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 oauth = OAuth(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
